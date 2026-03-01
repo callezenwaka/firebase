@@ -1,0 +1,23 @@
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Chat sessions - users can only access their own
+    match /chatSessions/{sessionId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // Chat messages - users can only access messages from their sessions
+    match /chatMessages/{messageId} {
+      allow read: if request.auth != null &&
+        (request.auth.uid == resource.data.userId ||
+         exists(/databases/$(database)/documents/chatSessions/$(resource.data.sessionId)) &&
+         get(/databases/$(database)/documents/chatSessions/$(resource.data.sessionId)).data.userId == request.auth.uid);
+
+      allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/chatSessions/$(request.resource.data.sessionId)) &&
+        get(/databases/$(database)/documents/chatSessions/$(request.resource.data.sessionId)).data.userId == request.auth.uid;
+    }
+  }
+}
