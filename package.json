@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "emulator": "firebase emulators:start --project demo-no-project --import=./emulator-data --export-on-exit",
+    "emulator": "firebase emulators:start --project algoboardapp --import=./emulator-data --export-on-exit",
+    "dev": "npm run emulator",
     "seed:roles": "NODE_ENV=development npx tsx seedRoles.ts",
     "seed:roles:staging": "NODE_ENV=staging npx tsx seedRoles.ts"
   },
