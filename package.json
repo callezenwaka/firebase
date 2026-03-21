@@ -4,8 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "emulator": "node scripts/emulator.mjs",
-    "dev": "npm run emulator"
+    "start": "node scripts/start.mjs",
+    "stop": "node scripts/stop.mjs",
+    "use": "node scripts/use.mjs",
+    "list": "node scripts/list.mjs",
+    "connect": "node scripts/connect.mjs",
+    "remove": "node scripts/remove.mjs"
   },
   "dependencies": {
     "@google-cloud/firestore": "^8.3.0",
@@ -13,9 +17,7 @@
     "firebase-admin": "^13.6.1"
   },
   "devDependencies": {
-    "firebase-tools": "^15.7.0",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "firebase-tools": "^15.7.0"
   },
   "description": "",
   "main": "index.js",
@@ -24,10 +26,10 @@
     "url": "git+https://github.com/callezenwaka/firebase.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
   "bugs": {
     "url": "https://github.com/callezenwaka/firebase/issues"
   },
-  "homepage": "https://github.com/callezenwaka/firebase#readme"
+  "homepage": "https://github.com/callezenwaka/firebase#readme",
+  "author": "callisezenwaka@gmail.com",
+  "license": "MIT"
 }

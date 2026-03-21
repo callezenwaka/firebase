@@ -1,6 +1,8 @@
 # Firebase Dev
 
-Portable local Firebase emulator infrastructure. Keeps emulator config, security rules, and seed scripts out of application repos. Designed as a **lift-and-shift** setup — drop it into any project and only change `.env`.
+Portable local Firebase emulator infrastructure. Keeps emulator config, security rules, and seed scripts out of application repos.
+
+Register a project ID and get an isolated emulator environment — no config files to edit.
 
 ## What's here
 
@@ -8,9 +10,8 @@ Portable local Firebase emulator infrastructure. Keeps emulator config, security
 |---|---|
 | `firebase.json` | Emulator port config (Auth: 9099, Firestore: 8083, PubSub: 8085, UI: 4000) |
 | `firestore.rules` | Firestore security rules |
-| `scripts/emulator.mjs` | Reads `PROJECT_ID` from `.env` and starts the emulator |
-| `emulator-data/` | Exported emulator snapshot (auth + Firestore) — auto-updated on exit |
-| `.env.example` | Template — copy to `.env` and fill in your project values |
+| `scripts/` | CLI scripts — one per command |
+| `emulator-data/<project-id>/` | Isolated snapshot per project — auto-saved on exit |
 
 ## Prerequisites
 
@@ -18,45 +19,63 @@ Portable local Firebase emulator infrastructure. Keeps emulator config, security
 - Java (required by Firebase emulator): `java -version`
 - `npm install`
 
-## Setup
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your project values:
-
-```env
-PROJECT_ID=your-project-id
-GOOGLE_CLOUD_PROJECT=your-project-id
-FIRESTORE_DATABASE=(default)
-```
-
-`PROJECT_ID` is the only required field to change when switching projects. It is passed directly to `firebase emulators:start --project`.
-
 ## Usage
 
-**Start emulator** (loads saved state, saves on exit):
+**Register a project and start the emulator:**
 ```bash
-npm run dev
-# or
-npm run emulator
+npm run use -- algoboardapp
+```
+
+This sets `algoboardapp` as the active project and starts the emulator. Data is saved to `emulator-data/algoboardapp/` and restored automatically on next start.
+
+**Switch to a different project:**
+```bash
+npm run use -- algoforms
+```
+
+Stops the current emulator (saving its state), then starts a fresh one for `algoforms`.
+
+**Start / stop the active project:**
+```bash
+npm start      # start emulator for active project
+npm stop       # stop emulator (state is saved automatically)
+```
+
+**List all projects:**
+```bash
+npm run list
+```
+
+```
+  → algoboardapp (running)
+    algoforms
+```
+
+**Get connection env vars for your app:**
+```bash
+npm run connect
+```
+
+```
+# Add to your app's .env (project: algoboardapp)
+
+GOOGLE_CLOUD_PROJECT=algoboardapp
+FIRESTORE_DATABASE=(default)
+FIRESTORE_EMULATOR_HOST=localhost:8083
+FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
+PUBSUB_EMULATOR_HOST=localhost:8085
+```
+
+**Remove a project and its data:**
+```bash
+npm run remove -- algoforms
 ```
 
 Emulator UI → http://localhost:4000
 
 ## Connecting an API or app
 
-Add these to your app's `.env` for local development:
-
-```env
-GOOGLE_CLOUD_PROJECT=your-project-id
-FIRESTORE_DATABASE=(default)
-FIRESTORE_EMULATOR_HOST=localhost:8083
-FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
-```
-
-The Firebase Admin SDK connects to the emulator automatically when `FIRESTORE_EMULATOR_HOST` and `FIREBASE_AUTH_EMULATOR_HOST` are set — no code changes needed.
+Copy the output of `npm run connect` into your app's `.env`. The Firebase Admin SDK connects to the emulator automatically when those env vars are set — no code changes needed.
 
 ## Emulator ports
 
@@ -69,27 +88,28 @@ The Firebase Admin SDK connects to the emulator automatically when `FIRESTORE_EM
 
 ## Emulator state
 
-`npm run emulator` starts with `--import=./emulator-data --export-on-exit`, so any data changes made during a session are saved back to `emulator-data/` automatically on shutdown (`Ctrl+C`).
+Each project's data lives in `emulator-data/<project-id>/`. State is saved automatically on `Ctrl+C` or `npm stop` via `--export-on-exit`.
 
 To export manually while the emulator is running:
 ```bash
-npx firebase emulators:export ./emulator-data
+npx firebase emulators:export ./emulator-data/<project-id>
 ```
 
 ## Firestore security rules
 
-Rules are defined in `firestore.rules` and enforced by the emulator at the same path as production.
+`firestore.rules` defaults to allow all reads and writes — suitable for local development. Production rules live in each application repo.
 
-| Collection | Rule |
-|---|---|
-| `chatSessions` | Authenticated users can only read/write their own sessions (`userId` must match `auth.uid`) |
-| `chatMessages` | Authenticated users can only read messages from their own sessions; can only create messages in sessions they own |
+## Known limitations
 
-## Switching projects
+### Auth emulator — multi-tenant custom tokens
 
-This repo is designed to be reused across projects without modification. To target a different Firebase project:
+The Auth emulator's `customTokenToIdToken` endpoint does not correctly forward `tenantId`. The resulting ID token has no tenant, which breaks tenant-scoped rules and tenant-aware middleware.
 
-1. Update `PROJECT_ID` (and `GOOGLE_CLOUD_PROJECT`) in `.env`
-2. Run `npm run dev`
+**Workaround:** pass `tenantId` explicitly in the custom token's additional claims:
 
-No other files need to change. The `--project` flag set by `scripts/emulator.mjs` takes precedence over `.firebaserc`.
+```js
+// Without this, tenantId is stripped by the emulator
+await auth.createCustomToken(uid, { tenantId: 'your-tenant-id' })
+```
+
+This is a backend fix — the emulator has no configuration to address it.
