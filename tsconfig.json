@@ -8,6 +8,6 @@
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-  }
-  // "include": ["*.ts"]
+  },
+  "include": ["**/*.ts"]
 }
