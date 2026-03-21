@@ -1,8 +1,6 @@
 node_modules
 .DS_Store
+*.log
 emulator-data
 .firebase-active
 .firebase-pid
-firebase-debug.log
-firestore-debug.log
-pubsub-debug.log
