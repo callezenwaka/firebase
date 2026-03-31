@@ -5,7 +5,8 @@
   "emulators": {
     "auth": {
       "port": 9099,
-      "host": "localhost"
+      "host": "localhost",
+      "signInOptions": ["emailLink"]
     },
     "firestore": {
       "port": 8083,
